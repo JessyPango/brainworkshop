@@ -81,7 +81,7 @@ CLINICAL_MODE = False
 CONFIG_OVERWRITE_IF_OLDER_THAN = '4.8'
 NOVBO = True
 VSYNC = False
-DEBUG = False
+DEBUG = True
 FOLDER_RES = 'res'
 FOLDER_DATA = 'data'
 CONFIGFILE = 'config.ini'
@@ -141,6 +141,7 @@ def calc_dpi(size = 100):
     return int(size * ((window.width + window.height)/(DEFAULT_WINDOW_WIDTH + DEFAULT_WINDOW_HEIGHT)))
 
 def get_pyglet_media_Player():
+    
     try:
         my_player = pyglet.media.Player()
     except Exception as e:
@@ -920,7 +921,9 @@ except Exception as e:
     debug_msg(e)
     quit_with_error(_('Error: unable to load pyglet.  If you already installed pyglet, please ensure ctypes is installed.  Please visit %s') % WEB_PYGLET_DOWNLOAD)
 try:
-    pyglet.options['audio'] = ('directsound', 'openal', 'alsa', )
+    # pyglet.options['audio'] = ('directsound', 'openal', 'alsa', )
+    pyglet.options['audio'] = ('openal', 'pulse', 'directsound', 'silent')
+    
     # use in pyglet 1.2: pyglet.options['audio'] = ('directsound', 'pulse', 'openal', )
     import pyglet.media
 except Exception as e:
@@ -961,6 +964,7 @@ def test_music():
                 debug_msg(e)
                 pyglet.lib.load_library('avbin')
             if pyglet.version >= '1.2':  # temporary workaround for defect in pyglet svn 2445
+                print("line 964: pyglet.version >= '1.2':")
                 pyglet.media.have_avbin = True
 
             # On Windows with Data Execution Protection enabled (on by default on Vista),
@@ -984,9 +988,11 @@ def test_music():
                     if results: return results
                 return results
             music_file = look_for_music(res_path)
+            
             if music_file:
                 # The first time we load a file should trigger the exception
                 music_file = music_file[0]
+                
                 loaded_music = pyglet.media.load(music_file, streaming=False)
                 del loaded_music
             else:
@@ -1053,7 +1059,7 @@ sounds = {}
 for k in list(resourcepaths['sounds']):
     sounds[k] = {}
     for f in resourcepaths['sounds'][k]:
-        sounds[k][os.path.basename(f).split('.')[0]] = pyglet.media.load(f, streaming=False)
+        sounds[k][os.path.basename(f).split('.')[0]] = pyglet.media.StaticSource(pyglet.media.load(f, streaming=False))
 
 sound = sounds['letters'] # is this obsolete yet?
 
@@ -1070,6 +1076,7 @@ def play_applause():
     if DEBUG: print("Playing applause")
     applauseplayer.play()
 def play_music(percent):
+    
     if 'music' in resourcepaths:
         if preventMusicSkipping: pyglet.clock.tick(poll=True) # Prevent music skipping 1
         if percent >= get_threshold_advance() and 'advance' in resourcepaths['music']:
@@ -3337,7 +3344,6 @@ class AnalysisLabel:
             str_list += [_('Score: %i%%') % percent]
 
         self.label.text = ''.join(str_list)
-
         stats.submit_session(percent, category_percents)
 
 # this controls the title of the session history chart.
